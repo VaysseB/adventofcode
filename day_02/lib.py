@@ -127,3 +127,17 @@ def solve(input: io.TextIOBase):
 
     yield our_score, None
     yield secret_score, None
+
+
+def inline_solve(input: io.TextIOBase):
+    elves, ours = list("ABC"), list("XYZ")
+    play_score = list(range(3))
+    outcome_score = list(range(0, 6+1, 3))
+
+    x = [
+        (elve, our)
+        for line in input.read().split("\n")
+        for elve, our in line.split(" ")
+    ]
+    x = list(x)
+    yield x, None

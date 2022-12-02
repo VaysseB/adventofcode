@@ -2,6 +2,7 @@ import io
 import collections
 import itertools
 
+
 def solve(input: io.TextIOBase):
     # input parsing
     elves_calories = collections.deque()
@@ -24,3 +25,13 @@ def solve(input: io.TextIOBase):
 
     yield top_3[0][1], { "top": top_3[0] }
     yield sum(calories for _, calories in top_3), { "top3": top_3 }
+
+
+def inline_solve(input: io.TextIOBase):
+    top3 = list(itertools.islice(iter(sorted(zip(*reversed(list(zip(*enumerate([
+        sum(int(n) for n in t_seq.split("\n"))
+        for t_seq in input.read().rstrip("\n").split("\n\n")
+    ]))))), reverse=True)), 3))
+
+    yield top3[0][0], {"top": top3[0]}
+    yield sum(list(zip(*top3))[0]), {"top3": top3}

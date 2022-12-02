@@ -27,16 +27,22 @@ class Day:
         assert path.exists(), f"day {num} does not exist: {path}"
         return cls(path, num)
 
-    def import_solver_func(self):
+    def _import_func(self, name: str):
         module = __import__(self.path.name + ".lib").lib
         func = getattr(module, "solve", None)
-        assert func is not None, f"missing `solve(...)` function from module {module!r}"
+        assert func is not None, f"missing `{name}(...)` function from module {module!r}"
 
-        func = getattr(module, "solve", None)
+        func = getattr(module, name, None)
         assert func is not None, f"missing `solve(...)` function from module {module!r}"
         assert callable(func), f"not a function {func!r}"
 
         return func
+
+    def solve_func(self):
+        return self._import_func("solve")
+
+    def inline_solve_func(self):
+        return self._import_func("inline_solve")
 
 
 def download_binary(url: str, path: pathlib.Path, session_cookie: str):
@@ -73,14 +79,18 @@ def cli(day: [int], example=False):
             download_binary(day.input_url(), input_path, session_cookie)
 
         with input_path.open(mode="r") as ifile:
-            solver = day.import_solver_func()(ifile)
+            results = []
+
+            # solve problem
+            solver = day.solve_func()(ifile)
+
+            column = len(" checked?")
 
             for i, (result, infos) in enumerate(solver, start=1):
-                result_path = day.result_path(i)
+                numtext = f"{day.number}.{i}"
+                emptypf = " " * len(numtext)
 
-                header = f"{day.number}.{i} result"
-
-                print(f"{header}> {result}")
+                print(numtext, f"{'result':>{column}}", ">", result)
 
                 if not example:
                     storage = { "_result": result }
@@ -88,11 +98,34 @@ def cli(day: [int], example=False):
                     if infos is not None:
                         storage["infos"] = infos
 
+                    result_path = day.result_path(i)
                     save_to(storage, result_path)
 
                 if infos is not None:
-                    print(f"{'infos':>{len(header)}}> ", end="")
+                    print(emptypf, f"{'infos':>{column}}", ">", "", end="")
                     pprint.pprint(infos)
+
+                results.append(result)
+
+            # check with inline function
+            isolve_func = day.inline_solve_func()
+            if isolve_func is not None:
+                print(f"verify with inline ...")
+
+                assert ifile.seekable()
+                ifile.seek(0)
+
+                isolver = isolve_func(ifile)
+
+
+                for i, (actual_res, (inline_res, _)) in enumerate(zip(results, isolver), start=1):
+                    numtext = f"{day.number}.{i}"
+
+                    ok = (actual_res == inline_res)
+                    if ok:
+                        print(numtext, f"{'checked?':>{column}}", "> ok")
+                    else:
+                        print(numtext, f"{'checked?':>{column}}", "> mismatch -", inline_res)
 
 
 if __name__ == "__main__":
