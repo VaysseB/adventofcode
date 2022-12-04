@@ -148,7 +148,7 @@ def inline_solve(input: io.TextIOBase):
                 (
                     play_score[ours.index(our_or_outcome)]
                     + outcome_score[
-                        (ours.index(our_or_outcome) - elves.index(elve) - 1) % 3
+                        (ours.index(our_or_outcome) - elves.index(elve) + 1) % 3
                     ],
                     outcome_score[outcomes.index(our_or_outcome)]
                     + play_score[
