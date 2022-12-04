@@ -22,11 +22,11 @@ class Day:
     def input_url(self):
         return f"https://adventofcode.com/2022/day/{self.number}/input"
 
-    def input_path(self, *, n_example=None) -> pathlib.Path:
-        if n_example is None:
+    def input_path(self, *, use_example=False) -> pathlib.Path:
+        if use_example is None:
             return self.path / "input.txt"
 
-        return self.path / f"input_ex{n_example}.txt"
+        return self.path / f"input_ex.txt"
 
     def result_path(self, n: int) -> pathlib.Path:
         return self.path / f"result_q{n}.txt"
@@ -144,95 +144,19 @@ class _Executor:
         self.day = day
         self.title = title
 
-    def solve(self, count: int):
+    def solve(self):
         prompt.title(self.day, self.title)
-        results = self.solve_main(count)
+
+        results = self.solve_main()
         self.solve_oneline(results)
 
-    def solve_main(self, count: int) -> tp.Iterator[int]:
-        raise NotImplementedError()
-
-    def solve_oneline(self, expected_results: tp.Iterable[int]):
-        raise NotImplementedError()
-
-
-class ExampleExecutor(_Executor):
-    def __init__(self, day: Day):
-        super().__init__(day, "example training")
-
-    def solve_main(self, count: int) -> tp.Iterator[int]:
-        for occurence in range(count):
-            with self.validate_input(occurence) as ifile:
-                solver = self.day.solve_func()(ifile)
-
-                try:
-                    for _ in range(occurence):
-                        next(solver)
-                except StopIteration:
-                    pass
-
-                try:
-                    result, infos = next(solver)
-                except StopIteration:
-                    return
-                else:
-                    prompt.result(self.day, occurence, result)
-
-                    if infos is not None:
-                        prompt.infos(self.day, occurence, infos)
-
-                    yield result
-
-    def solve_oneline(self, expected_results: tp.Iterable[int]):
-        for occurence, expected in enumerate(expected_results):
-            with self.validate_input(occurence) as ifile:
-                maybe_func = self.day.solve_func(oneline=True)
-
-                if maybe_func:
-                    solver = maybe_func(ifile)
-
-                    try:
-                        for _ in range(occurence):
-                            next(solver)
-                    except StopIteration:
-                        pass
-
-                    try:
-                        result, infos = next(solver)
-                    except StopIteration:
-                        prompt.unchecked(self.day, occurence)
-                    else:
-                        if result == expected:
-                            prompt.verified(self.day, occurence)
-                        else:
-                            prompt.mismatch(self.day, occurence, result)
-
-                else:
-                    prompt.unchecked(self.day, occurence)
-
-    def validate_input(self, occurence: int) -> io.TextIOBase:
-        input_path = self.day.input_path(n_example=occurence + 1)
-
-        if not input_path.exists():
-            prompt.missing(self.day, f"example file at {input_path}")
-            sys.exit(1)
-
-        return input_path.open(mode="r")
-
-
-class ProblemExecutor(_Executor):
-    def __init__(self, day: Day, get_session_cookie: tp.Callable[[], str]):
-        super().__init__(day, "real case")
-        self.get_session_cookie = get_session_cookie
-
-    def solve_main(self, count: int) -> tp.Iterator[int]:
+    def solve_main(self) -> tp.Iterator[int]:
         with self.validate_input() as ifile:
             solver = self.day.solve_func()(ifile)
 
             for occurence, (result, infos) in enumerate(solver):
-                assert (
-                    occurence
-                ) < count, f"unexpected #{occurence} (max {count})"
+                if occurence:
+                    ifile.seek(0)
 
                 prompt.result(self.day, occurence, result)
 
@@ -243,32 +167,61 @@ class ProblemExecutor(_Executor):
 
                 yield result
 
-                ifile.seek(0)
-
     def solve_oneline(self, expected_results: tp.Iterable[int]):
         with self.validate_input() as ifile:
             maybe_func = self.day.solve_func(oneline=True)
 
-            if not maybe_func:
+            if maybe_func is None:
                 for occurence, _ in enumerate(expected_results):
                     prompt.unchecked(self.day, occurence)
 
                 return
 
-            solver = iter(maybe_func(ifile))
+            solver = maybe_func(ifile)
 
             for occurence, expected in enumerate(expected_results):
+                if occurence:
+                    ifile.seek(0)
+
                 try:
-                    result, _ = next(solver)
+                    result, infos = next(solver)
                 except StopIteration:
                     prompt.unchecked(self.day, occurence)
+                    break
                 else:
                     if result == expected:
                         prompt.verified(self.day, occurence)
                     else:
                         prompt.mismatch(self.day, occurence, result)
 
-                ifile.seek(0)
+    def validate_input(self) -> io.TextIOBase:
+        raise NotImplementedError()
+
+    def persist_output(self, occurence: int, result: int, infos):
+        raise NotImplementedError()
+
+
+class ExampleExecutor(_Executor):
+    def __init__(self, day: Day):
+        super().__init__(day, "example training")
+
+    def validate_input(self) -> io.TextIOBase:
+        input_path = self.day.input_path(use_example=True)
+
+        if not input_path.exists():
+            prompt.missing(self.day, f"example file at {input_path}")
+            sys.exit(1)
+
+        return input_path.open(mode="r")
+
+    def persist_output(self, occurence: int, result: int, infos):
+        pass
+
+
+class ProblemExecutor(_Executor):
+    def __init__(self, day: Day, get_session_cookie: tp.Callable[[], str]):
+        super().__init__(day, "real case")
+        self.get_session_cookie = get_session_cookie
 
     def validate_input(self) -> io.TextIOBase:
         input_path = self.day.input_path()
@@ -317,7 +270,7 @@ def cli(day: list[int]):
             ProblemExecutor(day, get_session_cookie),
         ]
         for executor in executors:
-            executor.solve(2)
+            executor.solve()
 
 
 if __name__ == "__main__":
