@@ -29,7 +29,7 @@ def solve(input: io.TextIOBase):
     yield sum(calories for _, calories in top_3), {"top3": top_3}
 
 
-def inline_solve(input: io.TextIOBase):
+def oneline_solve(input: io.TextIOBase):
     top3 = list(
         itertools.islice(
             iter(

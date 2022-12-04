@@ -137,7 +137,7 @@ def solve(input: io.TextIOBase):
     yield secret_score, None
 
 
-def inline_solve(input: io.TextIOBase):
+def oneline_solve(input: io.TextIOBase):
     play_score, outcome_score = [1, 2, 3], [0, 3, 6]
     elves, ours, outcomes = list("ABC"), list("XYZ"), list("XYZ")
 
