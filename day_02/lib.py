@@ -4,7 +4,6 @@ import dataclasses
 
 
 class Outcomes:  # (enum.Enum):
-
     @dataclasses.dataclass
     class Outcome:
         score: int
@@ -30,9 +29,7 @@ class Outcomes:  # (enum.Enum):
         return iter([cls.LOST, cls.DRAW, cls.WIN])
 
 
-
 class Choices:  # (enum.Enum):
-
     @dataclasses.dataclass
     class Choice:
         elve: str
@@ -108,16 +105,26 @@ def solve(input: io.TextIOBase):
     line = input.readline()
     while line:
         elve_letter, our_letter = line.rstrip("\n").partition(" ")[::2]
-        elve_choice = next(choice for choice in Choices.__iter__() if choice.elve == elve_letter)
+        elve_choice = next(
+            choice
+            for choice in Choices.__iter__()
+            if choice.elve == elve_letter
+        )
 
         #
-        our_choice = next(choice for choice in Choices.__iter__() if choice.our == our_letter)
+        our_choice = next(
+            choice for choice in Choices.__iter__() if choice.our == our_letter
+        )
         outcome = our_choice.against(elve_choice)
         play_score = outcome.score + our_choice.score
         our_score += play_score
 
         #
-        outcome = next(outcome for outcome in Outcomes.__iter__() if outcome.symbol == our_letter)
+        outcome = next(
+            outcome
+            for outcome in Outcomes.__iter__()
+            if outcome.symbol == our_letter
+        )
         our_choice = elve_choice.fulfill(outcome)
         play_score = outcome.score + our_choice.score
         secret_score += play_score
@@ -130,14 +137,28 @@ def solve(input: io.TextIOBase):
 
 
 def inline_solve(input: io.TextIOBase):
-    elves, ours = list("ABC"), list("XYZ")
-    play_score = list(range(3))
-    outcome_score = list(range(0, 6+1, 3))
+    play_score = [1, 2, 3]
+    outcome_score = [0, 3, 6]
 
-    x = [
-        (elve, our)
+    elves, ours = list("ABC"), list("XYZ")
+    our_score = sum(
+        play_score[ours.index(our)]
+        + outcome_score[(ours.index(our) - elves.index(elve) - 1) % 3]
         for line in input.read().split("\n")
-        for elve, our in line.split(" ")
-    ]
-    x = list(x)
-    yield x, None
+        if line
+        for elve, our in [line.split(" ")]
+    )
+    yield our_score, None
+
+    input.seek(0)
+
+    elves, outcomes = list("ABC"), list("XYZ")
+    outcome_score = [0, 3, 6]
+    secret_score = sum(
+        outcome_score[outcomes.index(outcome)]
+        + play_score[(elves.index(elve) - (1 - outcomes.index(outcome))) % 3]
+        for line in input.read().split("\n")
+        if line
+        for elve, outcome in [line.split(" ")]
+    )
+    yield secret_score + 1, None

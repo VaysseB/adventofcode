@@ -22,7 +22,7 @@ class Day:
         return self.path / f"result_q{n}.txt"
 
     @classmethod
-    def from_number(cls, num: int, root: pathlib.Path) -> 'Day':
+    def from_number(cls, num: int, root: pathlib.Path) -> "Day":
         path = (root / f"day_{num:02}").resolve()
         assert path.exists(), f"day {num} does not exist: {path}"
         return cls(path, num)
@@ -30,10 +30,14 @@ class Day:
     def _import_func(self, name: str):
         module = __import__(self.path.name + ".lib").lib
         func = getattr(module, "solve", None)
-        assert func is not None, f"missing `{name}(...)` function from module {module!r}"
+        assert (
+            func is not None
+        ), f"missing `{name}(...)` function from module {module!r}"
 
         func = getattr(module, name, None)
-        assert func is not None, f"missing `solve(...)` function from module {module!r}"
+        assert (
+            func is not None
+        ), f"missing `solve(...)` function from module {module!r}"
         assert callable(func), f"not a function {func!r}"
 
         return func
@@ -75,7 +79,9 @@ def cli(day: [int], example=False):
 
         input_path = day.input_path(example=example)
         if not input_path.exists():
-            session_cookie = (root.parent / "session_cookie.txt").read_text().rstrip()
+            session_cookie = (
+                (root.parent / "session_cookie.txt").read_text().rstrip()
+            )
             download_binary(day.input_url(), input_path, session_cookie)
 
         with input_path.open(mode="r") as ifile:
@@ -84,7 +90,17 @@ def cli(day: [int], example=False):
             # solve problem
             solver = day.solve_func()(ifile)
 
-            column = len(" checked?")
+            column = 1 + max(
+                map(
+                    len,
+                    [
+                        "result",
+                        "verified",
+                        "mismatch",
+                        "---",
+                    ],
+                )
+            )
 
             for i, (result, infos) in enumerate(solver, start=1):
                 numtext = f"{day.number}.{i}"
@@ -93,7 +109,7 @@ def cli(day: [int], example=False):
                 print(numtext, f"{'result':>{column}}", ">", result)
 
                 if not example:
-                    storage = { "_result": result }
+                    storage = {"_result": result}
 
                     if infos is not None:
                         storage["infos"] = infos
@@ -109,23 +125,32 @@ def cli(day: [int], example=False):
 
             # check with inline function
             isolve_func = day.inline_solve_func()
-            if isolve_func is not None:
-                print(f"verify with inline ...")
-
+            if isolve_func is None:
+                print("not verification")
+            else:
                 assert ifile.seekable()
                 ifile.seek(0)
 
                 isolver = isolve_func(ifile)
 
-
-                for i, (actual_res, (inline_res, _)) in enumerate(zip(results, isolver), start=1):
+                for i, (actual_res, (inline_res, _)) in enumerate(
+                    zip(results, isolver), start=1
+                ):
                     numtext = f"{day.number}.{i}"
 
-                    ok = (actual_res == inline_res)
+                    ok = actual_res == inline_res
                     if ok:
-                        print(numtext, f"{'checked?':>{column}}", "> ok")
+                        print(numtext, f"{'verified':>{column}}")
                     else:
-                        print(numtext, f"{'checked?':>{column}}", "> mismatch -", inline_res)
+                        print(
+                            numtext,
+                            f"{'mismatch':>{column}}",
+                            "!=",
+                            inline_res,
+                        )
+
+                for i in range(i, len(results)):
+                    print(numtext, f"{'---':>{column}}")
 
 
 if __name__ == "__main__":
