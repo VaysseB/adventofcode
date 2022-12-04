@@ -247,12 +247,37 @@ class ProblemExecutor(_Executor):
                 ofile.write(chunk)
 
     def save_to(self, content, path: pathlib.Path):
-        json.dump(content, path.open("w"))
+        json.dump(content, path.open("w"), cls=CustomEncoder)
+
+
+class CustomEncoder(json.JSONEncoder):
+    def default(self, obj):
+        import collections
+
+        if isinstance(obj, collections.deque):
+            return list(obj)
+
+        import enum
+
+        if isinstance(obj, enum.Enum):
+            return {obj.name: obj.value}
+
+        import dataclasses
+
+        if dataclasses.is_dataclass(obj):
+            return dataclasses.asdict(obj)
+
+        to_json = getattr(obj, "to_json", None)
+        if to_json and callable(to_json):
+            return to_json()
+
+        return super().default(obj)
 
 
 @click.command()
+@click.option("-x", "--example", is_flag=True, help="Example-only run.")
 @click.argument("day", type=click.IntRange(1, 25), nargs=-1, required=True)
-def cli(day: list[int]):
+def cli(day: list[int], example: bool):
     @functools.lru_cache
     def get_session_cookie() -> str:
         return (root / "session_cookie.txt").read_text().rstrip()
@@ -261,10 +286,13 @@ def cli(day: list[int]):
         day = Day.from_number(number, root)
 
         # first check with example
-        executors = [
+        executors: list[_Executor] = [
             ExampleExecutor(day),
-            ProblemExecutor(day, get_session_cookie),
         ]
+
+        if not example:
+            executors.append(ProblemExecutor(day, get_session_cookie))
+
         for executor in executors:
             executor.solve()
 
