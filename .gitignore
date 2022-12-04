@@ -2,4 +2,4 @@
 __pycache__/
 *.py[cod]
 
-oauth_session_cookie.txt
+session_cookie.txt
