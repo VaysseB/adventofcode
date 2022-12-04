@@ -23,10 +23,7 @@ class Day:
         return f"https://adventofcode.com/2022/day/{self.number}/input"
 
     def input_path(self, *, use_example=False) -> pathlib.Path:
-        if use_example is None:
-            return self.path / "input.txt"
-
-        return self.path / f"input_ex.txt"
+        return self.path / ("input_ex.txt" if use_example else "input.txt")
 
     def result_path(self, n: int) -> pathlib.Path:
         return self.path / f"result_q{n}.txt"
@@ -187,7 +184,6 @@ class _Executor:
                     result, infos = next(solver)
                 except StopIteration:
                     prompt.unchecked(self.day, occurence)
-                    break
                 else:
                     if result == expected:
                         prompt.verified(self.day, occurence)
@@ -224,7 +220,7 @@ class ProblemExecutor(_Executor):
         self.get_session_cookie = get_session_cookie
 
     def validate_input(self) -> io.TextIOBase:
-        input_path = self.day.input_path()
+        input_path = self.day.input_path(use_example=False)
 
         if not input_path.exists():
             self.download_binary(self.day.input_url(), input_path)
