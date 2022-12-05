@@ -26,7 +26,7 @@ def group_slice(items: tp.Iterable[tp.T], count: int, strict=True) -> tp.Iterabl
 
 
 class Copier:
-    _immutable = (type(None), int, float, bool, str)
+    _immutable = (int, float, bool, str)
 
     def __call__(self, **kwargs):
         assert len(kwargs) == 1
@@ -34,25 +34,25 @@ class Copier:
         return self._copy(target, ((), "=", name))
 
     def _copy(self, target, path):
+        if target is None:
+            return
+
+        ttype = type(target)
+        newest = None
+
         if isinstance(target, self._immutable):
-            return target
-
-        copyfunc = getattr(self, f"_copy_{type(target).__name__}", None)
-        if copyfunc is not None:
-            newest = copyfunc(target, path)
-            assert type(newest) is type(target), f"expected copied type {type(target)!r}, not {type(newest)!r}"
-            return newest
-
-        if dataclasses.is_dataclass(target):
+            newest = target
+        elif ttype in self._ctable:
+            newest = self._ctable[ttype](self, target, path)
+        elif dataclasses.is_dataclass(target):
             newest = self._copy_dataclass(target, path)
-            assert type(newest) is type(target), f"expected copied type {type(target)!r}, not {type(newest)!r}"
-            return newest
 
-        msg = f"cannot copy instance of {type(target)!r}"
-        path_str = self._join_path(path)
-        if path_str:
-            msg += f"at '{path_str}'"
-        raise RuntimeError(msg)
+        if type(newest) is ttype:
+            return newest
+        elif newest is None:
+            raise RuntimeError(f"cannot copy instance of {type(target)!r} at '{self._join_path(path)}'")
+        else:
+            raise RuntimeError(f"expected copied type {type(target)!r}, not {type(newest)!r}")
 
     def _join_path(self, head_path) -> tp.Optional[str]:
         parts = collections.deque()
@@ -79,7 +79,7 @@ class Copier:
         return tuple(self._iter_index(target, path))
 
     def _copy_queue(self, target, path):
-        return collections.queue(self._iter_index(target, path))
+        return collections.deque(self._iter_index(target, path))
 
     def _copy_dict(self, target, path):
         return dict(self._iter_key(target.items(), path))
@@ -93,5 +93,12 @@ class Copier:
             for field in dataclasses.fields(target)
         )
         return type(target)(**members)
+
+    _ctable = {
+        list: _copy_list,
+        tuple: _copy_tuple,
+        dict: _copy_dict,
+        collections.deque: _copy_queue,
+    }
 
 copy = Copier()
