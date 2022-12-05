@@ -218,9 +218,12 @@ class Executor:
 
 @click.command()
 @click.option("-x", "--example", is_flag=True, help="Run with example data.")
-@click.option("-g", "--golf", is_flag=True, help="Run code golf solution.")
+@click.option("-r", "--real", is_flag=True, help="Run with real data.")
+@click.option("-g", "--golf", is_flag=True, help="Add code golf solution.")
 @click.argument("day", type=click.IntRange(1, 25), nargs=-1, required=True)
-def cli(day: tp.List[int], example: bool, golf: bool):
+def cli(day: tp.List[int], example: bool, real: bool, golf: bool):
+
+    real = real or (not example and not real)
 
     # fetch cookie from file and cache it if required
     @functools.lru_cache()
@@ -233,9 +236,9 @@ def cli(day: tp.List[int], example: bool, golf: bool):
         # first check with example
         situations = itertools.compress(*zip(
             ({"example_run": True, "golf_mode": False}, example),
-            ({"example_run": False, "golf_mode": False}, True),
+            ({"example_run": False, "golf_mode": False}, real),
             ({"example_run": True, "golf_mode": True}, example and golf),
-            ({"example_run": False, "golf_mode": True}, golf),
+            ({"example_run": False, "golf_mode": True}, real and golf),
         ))
 
         executor = Executor(day, get_session_cookie)
