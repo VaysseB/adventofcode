@@ -52,6 +52,6 @@ def solve(input: io.TextIOBase):
     yield total_badges_3elve_group, None
 
 
-def oneline_solve(input: io.TextIOBase):
+def solve_golf(input: io.TextIOBase):
     if False:
         yield

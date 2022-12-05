@@ -50,6 +50,6 @@ def solve(input: io.TextIOBase):
     yield len(overlaps[Overlap.PARTIAL]) + len(overlaps[Overlap.COMPLETE]), None
 
 
-def oneline_solve(input: io.TextIOBase):
+def solve_golf(input: io.TextIOBase):
     if False:
         yield

@@ -6,6 +6,6 @@ def solve(input: io.TextIOBase):
         yield
 
 
-def oneline_solve(input: io.TextIOBase):
+def solve_golf(input: io.TextIOBase):
     if False:
         yield
