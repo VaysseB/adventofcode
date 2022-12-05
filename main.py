@@ -228,7 +228,8 @@ class Executor:
 @click.argument("day", type=click.IntRange(1, 25), nargs=-1, required=True)
 def cli(day: tp.List[int], example: bool, real: bool, golf: bool):
 
-    real = real or (not example and not real)
+    if not example and not real:
+        example, real = True, True
 
     # fetch cookie from file and cache it if required
     @functools.lru_cache()

@@ -4,6 +4,8 @@ import dataclasses
 import collections
 import typing as tp
 
+import utils
+
 
 @dataclasses.dataclass
 class Column:
@@ -28,9 +30,12 @@ class Dock:
 
         return cls({column.id: column for column in columns})
 
-    def apply(self, inst: 'Instruction'):
+    def apply(self, inst: 'Instruction', multiple: bool):
         start = self.columns[inst.start_id]
+
         crates = [start.crates.pop() for _ in range(inst.count)]
+        if multiple:
+            crates = reversed(crates)
 
         dest = self.columns[inst.dest_id]
         dest.crates.extend(crates)
@@ -82,11 +87,16 @@ def solve(input: io.TextIOBase):
     for line in lines:
         inst = Instruction.from_line(line)
         buffer.append(inst)
-    
-    for inst in buffer:
-        dock.apply(inst)
 
-    yield "".join(dock.top_crates()), None
+    dock_9000 = utils.copy(dock=dock)
+    dock_9001 = utils.copy(dock=dock)
+
+    for inst in buffer:
+        dock_9000.apply(inst, multiple=False)
+        dock_9001.apply(inst, multiple=True)
+
+    yield "".join(dock_9000.top_crates()), None
+    yield "".join(dock_9001.top_crates()), None
 
 
 def solve_golf(input: io.TextIOBase):
