@@ -176,6 +176,11 @@ class Executor:
 
                 result, infos = raw
 
+                try:
+                    result = type(expect)(result)
+                except Exception:
+                    pass
+
                 if expect is None:
                     prompt.result_unchecked(case, result)
                 elif result == expect:
@@ -203,7 +208,7 @@ class Executor:
         if not result_path.exists():
             return []
 
-        return [int(line) for line in result_path.read_text().splitlines(keepends=False) if line]
+        return [line for line in result_path.read_text().splitlines(keepends=False) if line]
 
     def download_binary(self, url: str, path: pathlib.Path):
         cookies = dict(session=self.get_session_cookie())
