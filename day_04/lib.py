@@ -1,5 +1,7 @@
+import re
 import io
 import enum
+import pathlib
 import dataclasses
 import typing as tp
 
@@ -51,5 +53,18 @@ def solve(input: io.TextIOBase):
 
 
 def solve_golf(input: io.TextIOBase):
-    if False:
-        yield
+    res = list(
+        [
+            (line.rstrip("\n"), (start_f <= start_l and end_f >= end_l))
+            for line in input.readlines()
+            if line and not line.isspace()
+            for (start_f, end_f), (start_l, end_l) in [
+                sorted(
+                    [int(num) for num in pair.split("-")]
+                    for pair in line.strip("\n").split(",")
+                )
+            ]
+        ]
+    )
+
+    yield sum(dict(res).values()), res

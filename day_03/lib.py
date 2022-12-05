@@ -16,23 +16,31 @@ class ElveRuckSacks:
     rucksacks: tp.Tuple[tp.Counter[int], tp.Counter[int]]
 
     def unique(self) -> tp.Counter[int]:
-        return collections.Counter(itertools.chain.from_iterable(rs.keys() for rs in self.rucksacks))
+        return collections.Counter(
+            itertools.chain.from_iterable(rs.keys() for rs in self.rucksacks)
+        )
 
     @classmethod
-    def from_line(cls, raw: str) -> tp.Tuple['RuckSack', 'RuckSack']:
+    def from_line(cls, raw: str) -> tp.Tuple["RuckSack", "RuckSack"]:
         midpoint = len(raw) // 2
-        rucksacks = ([collections.Counter(raw[:midpoint]), collections.Counter(raw[midpoint:])])
+        rucksacks = [
+            collections.Counter(raw[:midpoint]),
+            collections.Counter(raw[midpoint:]),
+        ]
         return cls(raw, rucksacks)
 
     @classmethod
-    def duplicate(self, other: 'ElveRuckSacks') -> str:
+    def duplicate(self, other: "ElveRuckSacks") -> str:
         return other.unique().most_common(1)[0][0]
 
     @classmethod
-    def badge(self, others: tp.List['ElveRuckSacks']) -> str:
-        allinone = collections.Counter(itertools.chain.from_iterable(elve_rs.unique().keys() for elve_rs in others))
+    def badge(self, others: tp.List["ElveRuckSacks"]) -> str:
+        allinone = collections.Counter(
+            itertools.chain.from_iterable(
+                elve_rs.unique().keys() for elve_rs in others
+            )
+        )
         return allinone.most_common(1)[0][0]
-
 
 
 def priority_of(item):

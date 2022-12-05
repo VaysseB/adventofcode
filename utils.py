@@ -5,7 +5,9 @@ import collections
 import typing as tp
 
 
-def group_slice(items: tp.Iterable[tp.T], count: int, strict=True) -> tp.Iterable[tp.T]:
+def group_slice(
+    items: tp.Iterable[tp.T], count: int, strict=True
+) -> tp.Iterable[tp.T]:
     if count == 0:
         raise RuntimeError(f"expected positive count, not {count}")
 
@@ -19,13 +21,20 @@ def group_slice(items: tp.Iterable[tp.T], count: int, strict=True) -> tp.Iterabl
             group.append(item)
 
     if group and len(group) != count:
-        raise RuntimeError(f"items length is not a multiple of {count}, rest is {len(group)}")
+        raise RuntimeError(
+            f"items length is not a multiple of {count}, rest is {len(group)}"
+        )
 
     if group:
         yield tuple(group)
 
 
 class Copier:
+    """
+    Deep copy utility with extended support of standard Python object.
+    Such as: dataclasses, collections.deque.
+    """
+
     _immutable = (int, float, bool, str)
 
     def __call__(self, **kwargs):
@@ -50,9 +59,13 @@ class Copier:
         if type(newest) is ttype:
             return newest
         elif newest is None:
-            raise RuntimeError(f"cannot copy instance of {type(target)!r} at '{self._join_path(path)}'")
+            raise RuntimeError(
+                f"cannot copy instance of {type(target)!r} at '{self._join_path(path)}'"
+            )
         else:
-            raise RuntimeError(f"expected copied type {type(target)!r}, not {type(newest)!r}")
+            raise RuntimeError(
+                f"expected copied type {type(target)!r}, not {type(newest)!r}"
+            )
 
     def _join_path(self, head_path) -> tp.Optional[str]:
         parts = collections.deque()
@@ -60,17 +73,22 @@ class Copier:
         while head_path:
             head_path, access, piece = head_path
             midpoint = int(math.ceil(len(access) * 0.5))
-            piece = (str(piece) if len(access) % 2 else repr(piece))
+            piece = str(piece) if len(access) % 2 else repr(piece)
             text = access[:midpoint] + piece + access[midpoint:]
             parts.insert(0, text)
 
         return "".join(parts) or None
 
     def _iter_index(self, target, path, access="[]"):
-        return (self._copy(item, (path, access, i)) for i, item in enumerate(target))
+        return (
+            self._copy(item, (path, access, i)) for i, item in enumerate(target)
+        )
 
     def _iter_key(self, target, path, access="[]"):
-        return ((self._copy(key, path), self._copy(value, (path, access, key))) for key, value in target)
+        return (
+            (self._copy(key, path), self._copy(value, (path, access, key)))
+            for key, value in target
+        )
 
     def _copy_list(self, target, path):
         return list(self._iter_index(target, path))
@@ -88,7 +106,9 @@ class Copier:
         members = dict(
             (
                 self._copy(field.name, (path, ".", field.name)),
-                self._copy(getattr(target, field.name), (path, ".", field.name))
+                self._copy(
+                    getattr(target, field.name), (path, ".", field.name)
+                ),
             )
             for field in dataclasses.fields(target)
         )
@@ -100,5 +120,6 @@ class Copier:
         dict: _copy_dict,
         collections.deque: _copy_queue,
     }
+
 
 copy = Copier()

@@ -71,9 +71,11 @@ class Case:
     golf_answer: bool = False
     example_data: bool = False
 
-    def about(self, anwser_num: int) -> 'Case':
+    def about(self, anwser_num: int) -> "Case":
         assert self.anwser_num is None
-        return type(self)(**{**dataclasses.asdict(self), "anwser_num": anwser_num})
+        return type(self)(
+            **{**dataclasses.asdict(self), "anwser_num": anwser_num}
+        )
 
 
 class Prompt:
@@ -150,7 +152,12 @@ class Executor:
         self.get_session_cookie = get_session_cookie
 
     def solve(self, example_run: bool, golf_mode: bool):
-        day_case = Case(self.day.number, None, golf_answer=golf_mode, example_data=example_run)
+        day_case = Case(
+            self.day.number,
+            None,
+            golf_answer=golf_mode,
+            example_data=example_run,
+        )
 
         expected = self.load_results(day_case)
 
@@ -164,7 +171,9 @@ class Executor:
         with self.validate_input(day_case) as ifile:
             solver = create_solver(ifile)
 
-            for answer_num, (raw, expect) in enumerate(itertools.zip_longest(solver, expected)):
+            for answer_num, (raw, expect) in enumerate(
+                itertools.zip_longest(solver, expected)
+            ):
                 case = day_case.about(answer_num)
 
                 if case.anwser_num:
@@ -188,6 +197,9 @@ class Executor:
                 else:
                     prompt.mismatch(case, result, expect)
 
+                    if infos is not None:
+                        prompt.infos(case, infos)
+
     def validate_input(self, case: Case) -> io.TextIOBase:
         """Check input validity and return a read-only file descriptor."""
         input_path = self.day.input_path(use_example=case.example_data)
@@ -208,7 +220,11 @@ class Executor:
         if not result_path.exists():
             return []
 
-        return [line for line in result_path.read_text().splitlines(keepends=False) if line]
+        return [
+            line
+            for line in result_path.read_text().splitlines(keepends=False)
+            if line
+        ]
 
     def download_binary(self, url: str, path: pathlib.Path):
         cookies = dict(session=self.get_session_cookie())
@@ -240,12 +256,14 @@ def cli(day: tp.List[int], example: bool, real: bool, golf: bool):
         day = Day.from_number(number, root)
 
         # first check with example
-        situations = itertools.compress(*zip(
-            ({"example_run": True, "golf_mode": False}, example),
-            ({"example_run": False, "golf_mode": False}, real),
-            ({"example_run": True, "golf_mode": True}, example and golf),
-            ({"example_run": False, "golf_mode": True}, real and golf),
-        ))
+        situations = itertools.compress(
+            *zip(
+                ({"example_run": True, "golf_mode": False}, example),
+                ({"example_run": False, "golf_mode": False}, real),
+                ({"example_run": True, "golf_mode": True}, example and golf),
+                ({"example_run": False, "golf_mode": True}, real and golf),
+            )
+        )
 
         executor = Executor(day, get_session_cookie)
 
