@@ -192,6 +192,10 @@ class Executor:
 
                 if expect is None:
                     prompt.result_unchecked(case, result)
+
+                    if infos is not None:
+                        prompt.infos(case, infos)
+
                 elif result == expect:
                     prompt.verified(case, result)
                 else:
