@@ -1,5 +1,5 @@
-import enum
 import math
+import itertools
 import dataclasses
 import collections
 import typing as tp
@@ -8,7 +8,7 @@ import typing as tp
 def group_slice(
     items: tp.Iterable[tp.T], count: int, strict=True
 ) -> tp.Iterable[tp.T]:
-    if count == 0:
+    if count <= 0:
         raise RuntimeError(f"expected positive count, not {count}")
 
     group = collections.deque()
@@ -27,6 +27,29 @@ def group_slice(
 
     if group:
         yield tuple(group)
+
+
+def sliding_window(
+    items: tp.Iterable[tp.T], count: int, underflow_ok=False
+) -> tp.Iterable[tp.T]:
+    if count <= 0:
+        raise RuntimeError(f"expected positive count, not {count}")
+
+    items = iter(items)
+
+    window = collections.deque(itertools.islice(items, count))
+
+    if len(window) < count and not underflow_ok:
+        raise RuntimeError(
+            f"no window because {count} is greater than elements in {items}"
+        )
+
+    yield tuple(window)
+
+    for item in items:
+        window.popleft()
+        window.append(item)
+        yield tuple(window)
 
 
 class Copier:
