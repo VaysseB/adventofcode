@@ -24,6 +24,17 @@ class Day:
     path: pathlib.Path
 
     @classmethod
+    def list_from(cls, root: pathlib.Path) -> tp.Iterable["Day"]:
+        for path in root.iterdir():
+            if path.name.startswith("day_") and path.is_dir():
+                try:
+                    num = int(path.name[4:])
+                except ValueError:
+                    pass
+                else:
+                    yield cls(num, path)
+
+    @classmethod
     def from_number(cls, num: int, root: pathlib.Path) -> "Day":
         path = (root / f"day_{num:02}").resolve()
         day = cls(num, path)
@@ -245,7 +256,7 @@ class Executor:
 @click.option("-x", "--example", is_flag=True, help="Run with example data.")
 @click.option("-r", "--real", is_flag=True, help="Run with real data.")
 @click.option("-g", "--golf", is_flag=True, help="Add code golf solution.")
-@click.argument("day", type=click.IntRange(1, 25), nargs=-1, required=True)
+@click.argument("day", type=click.IntRange(1, 25), nargs=-1)
 def cli(day: tp.List[int], example: bool, real: bool, golf: bool):
 
     if not example and not real:
@@ -256,19 +267,21 @@ def cli(day: tp.List[int], example: bool, real: bool, golf: bool):
     def get_session_cookie() -> str:
         return (root / "session_cookie.txt").read_text().rstrip()
 
-    for number in day:
-        day = Day.from_number(number, root)
+    days: tp.Iterable[Day] = (
+        [Day.from_number(number, root) for number in day] 
+        or Day.list_from(root)
+    )
 
-        # first check with example
-        situations = itertools.compress(
-            *zip(
-                ({"example_run": True, "golf_mode": False}, example),
-                ({"example_run": False, "golf_mode": False}, real),
-                ({"example_run": True, "golf_mode": True}, example and golf),
-                ({"example_run": False, "golf_mode": True}, real and golf),
-            )
+    situations = list(itertools.compress(
+        *zip(
+            ({"example_run": True, "golf_mode": False}, example),
+            ({"example_run": False, "golf_mode": False}, real),
+            ({"example_run": True, "golf_mode": True}, example and golf),
+            ({"example_run": False, "golf_mode": True}, real and golf),
         )
+    ))
 
+    for day in days:
         executor = Executor(day, get_session_cookie)
 
         for kwargs in situations:
