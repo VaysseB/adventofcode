@@ -8,47 +8,66 @@ class FileSystem:
     @dataclasses.dataclass
     class Node:
         name: str
-        parent: tp.Optional["Node"]
-        own_size: tp.Optional[int]  # None=folder   something=file
-        children: tp.List["Node"] = dataclasses.field(default_factory=list)
+        parent: tp.Optional["Node"]  # None=root
+        content_size: tp.Optional[int]  # None=folder   something=file
+
+        _entries: tp.Dict[str, "Node"] = dataclasses.field(default_factory=dict)
         _total_size_cache: tp.Optional[int] = None
+        _path: str = ""
+
+        def __post_init__(self):
+            if self.parent:
+                self._path = self.parent.path() + "/" + self.name
+                self._entries[".."] = self.parent
+            else:
+                self._path = ""
 
         def __str__(self):
-            if self.is_dir():
-                return f"Folder({self.name!r}, x{len(self.children)})"
-            return f"File({self.name!r}, size={self.own_size})"
+            if not self.parent:
+                return f"Folder({self.name!s}, x{len(self._entries)})"
+            elif self.is_dir():
+                return f"Folder({self.name!s}, x{len(self._entries) - 1})"
+            return f"File({self.name!s}, size={self.content_size})"
 
         __repr__ = __str__
 
         def is_dir(self) -> bool:
-            return self.own_size is None
+            return self.content_size is None
 
         def is_file(self) -> bool:
-            return self.own_size is not None
+            return self.content_size is not None
+
+        def path(self) -> str:
+            return self._path
+
+        def children(self) -> tp.Iterator["Node"]:
+            for _, entry in sorted(self._entries.items(), key=(lambda p: p[0])):
+                if entry is not self.parent:
+                    yield entry
 
         def total_size(self) -> int:
             if self._total_size_cache is None:
-                self._total_size_cache = (self.own_size or 0) + sum(
-                    c.total_size() for c in self.children
+                self._total_size_cache = (self.content_size or 0) + sum(
+                    child.total_size() for child in self.children()
                 )
 
             return self._total_size_cache
 
-        def new_folder(self, name: str):
+        def _new(self, name: str, content_size: tp.Optional[int]):
             if not self.is_dir():
                 raise RuntimeError("can only add folder under another folder")
+            elif name in self._entries:
+                raise RuntimeError(f"entry already exist {name!r} in {self.path()}")
 
-            child = FileSystem.Node(name, self, None)
-            self.children.append(child)
+            child = FileSystem.Node(name, self, content_size)
+            self._entries[name] = child
             return child
 
-        def new_file(self, name: str, size: int):
-            if not self.is_dir():
-                raise RuntimeError("can only add file under a folder")
+        def new_folder(self, name: str) -> "Node":
+            return self._new(name, None)
 
-            child = FileSystem.Node(name, self, size)
-            self.children.append(child)
-            return child
+        def new_file(self, name: str, size: int) -> "Node":
+            return self._new(name, size)
 
     def __init__(self):
         self.root = self.Node("/", None, None)
@@ -57,36 +76,27 @@ class FileSystem:
     def move(self, name: str):
         assert name, "empty name"
 
-        if name == "/":
+        child = self.current._entries.get(name, None)
+        if child:
+            self.current = child
+        elif name == "/":
             self.current = self.root
-        elif name == ".":
-            pass
-        elif name == "..":
-            if self.current.parent is None:
-                assert self.current is self.root
-            else:
-                self.current = self.current.parent
         else:
-            for child in self.current.children:
-                if child.name == name:
-                    self.current = child
-                    break
-            else:
-                raise RuntimeError(f"invalid name {name!r}")
+            raise RuntimeError(f"file/folder {name!r} does not exist at {self.current.path()!r}")
 
         return self
 
     def iterdir(self) -> tp.Iterable[Node]:
         assert (
             self.current.is_dir()
-        ), f"expected folder to iterate over, not file {self.current.name!r}"
+        ), f"not a folder {self.current.path()!r}"
 
         nodes = collections.deque([self.current])
 
         while nodes:
             current = nodes.popleft()
             yield current
-            nodes.extend(current.children)
+            nodes.extendleft(current.children())
 
 
 def solve(input: io.TextIOBase):
@@ -135,7 +145,7 @@ def solve(input: io.TextIOBase):
         if node.is_dir() and node.total_size() >= to_free_size
     )
     candidates = sorted(candidates, key=FileSystem.Node.total_size)
-    yield next(iter(candidates)).name, None
+    yield next(iter(candidates)).total_size(), [(c.path(), c.total_size()) for c in candidates]
 
 
 def solve_golf(input: io.TextIOBase):
