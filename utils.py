@@ -2,6 +2,7 @@ import math
 import itertools
 import dataclasses
 import collections
+import string
 import typing as tp
 
 
@@ -50,6 +51,18 @@ def sliding_window(
         window.popleft()
         window.append(item)
         yield tuple(window)
+
+
+def gen_names(corpus: tp.List[str]=string.ascii_lowercase, min_length: int=1) -> tp.Iterable[str]:
+    corpus = list(corpus)
+    yield from iter(
+        "".join(next(itertools.islice(
+            itertools.product(corpus, repeat=min_length + (x // len(corpus))),
+            x % len(corpus),
+            x % len(corpus) + 1
+        )))
+        for x in itertools.count(0)
+    )
 
 
 class Copier:

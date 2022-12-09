@@ -2,6 +2,11 @@ import io
 
 
 def solve(input: io.TextIOBase):
+    for line in input.readlines():
+        line = line.rstrip("\n")
+        if not line:
+            break
+
     if False:
         yield
 
