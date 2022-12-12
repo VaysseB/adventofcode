@@ -60,7 +60,7 @@ class Forest:
                 yield curr
                 tallest = curr
 
-    def count_visible(self) -> int:
+    def all_visible(self) -> int:
         left_seen = self._count_visible(self._by_rows, 1)
         right_seen = self._count_visible(self._by_rows, -1)
         top_seen = self._count_visible(self._by_columns, 1)
@@ -115,7 +115,7 @@ def solve(input: io.TextIOBase):
 
     forest = Forest.from_raw(raw)
 
-    yield len(forest.count_visible()), None
+    yield len(forest.all_visible()), None
     yield forest.best_scenic().score(), None
 
 
