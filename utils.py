@@ -6,6 +6,14 @@ import string
 import typing as tp
 
 
+class classproperty(property):
+    def __get__(self, owner_self, owner_cls):
+        return self.fget(owner_cls)
+
+    def __set__(self, owner_self, owner_cls):
+        raise AttributeError("cannot set a classproperty")
+
+
 def group_slice(
     items: tp.Iterable[tp.T], count: int, strict=True
 ) -> tp.Iterable[tp.T]:

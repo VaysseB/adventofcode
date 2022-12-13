@@ -4,6 +4,8 @@ import dataclasses
 import pathlib
 import itertools
 import functools
+import contextlib
+import inspect
 import pprint
 import typing as tp
 
@@ -49,11 +51,19 @@ class Day:
     def input_url(self) -> str:
         return f"https://adventofcode.com/2022/day/{self.number}/input"
 
-    def input_path(self, *, use_example=False) -> pathlib.Path:
-        return self.path / f"input{'_ex' * use_example}.txt"
+    def _path_of(self, name: str, example_index: int) -> str:
+        # rule for suffix
+        # x < 0  -> ''
+        # x == 0 -> '_ex'
+        # x == 1 -> '_ex2'
+        suffix = '_ex' * (example_index >= 0) + str(example_index + 1) * (example_index > 0)
+        return self.path / f"{name}{suffix}.txt"
 
-    def result_path(self, *, use_example=False) -> pathlib.Path:
-        return self.path / f"result{'_ex' * use_example}.txt"
+    def input_path(self, *, example_index=-1) -> pathlib.Path:
+        return self._path_of("input", example_index)
+
+    def result_path(self, *, example_index=-1) -> pathlib.Path:
+        return self._path_of("result", example_index)
 
     def _import_func(self, name: str) -> tp.Any:
         """
@@ -179,28 +189,44 @@ class Executor:
                 prompt.not_implemented(day_case.about(answer_num))
             return
 
-        with self.validate_input(day_case) as ifile:
-            solver = create_solver(ifile)
+        with contextlib.ExitStack() as estack:
+            # close all files when done automatically
+            ifiles = self.validate_inputs(day_case)
+
+            for ifile in ifiles:
+                estack.enter_context(ifile)
+
+            # create solver based on its signature
+            hints = tp.get_type_hints(create_solver)
+            solver = create_solver(ifiles)
 
             for answer_num, (raw, expect) in enumerate(
                 itertools.zip_longest(solver, expected)
             ):
                 case = day_case.about(answer_num)
 
-                if case.anwser_num:
-                    ifile.seek(0)
+                if case.anwser_num > 0 and len(ifiles) == 1:
+                    # reset single file cursor in case of multiple run
+                    ifiles[0].seek(0)
 
                 if raw is None:
                     prompt.not_implemented(case)
                     continue
 
+                # extract result
                 result, infos = raw
 
+                # convert result into the expected type if possible
+                # to ease comparison
                 try:
                     result = type(expect)(result)
                 except Exception:
                     pass
 
+                # handle every result
+                # > not checked against known solution
+                # > mismatch with solution
+                # > same as solution
                 if expect is None:
                     prompt.result_unchecked(case, result)
 
@@ -215,22 +241,42 @@ class Executor:
                     if infos is not None:
                         prompt.infos(case, infos)
 
-    def validate_input(self, case: Case) -> io.TextIOBase:
-        """Check input validity and return a read-only file descriptor."""
-        input_path = self.day.input_path(use_example=case.example_data)
+    def validate_inputs(self, case: Case, count=2) -> tp.List[io.TextIOBase]:
+        """Check input validity and return read-only file(s) descriptor."""
+        paths = []
 
-        if not input_path.exists():
-            if case.example_data:
-                prompt.missing(case, f"example file at {input_path}")
+        if case.example_data:
+            # check 2 files, maybe only one, but not none
+            paths = [
+                p
+                for i in range(count)
+                for p in [self.day.input_path(example_index=i)]
+                if p.exists()
+            ]
+
+            if not paths:
+                prompt.missing(case, f"input example file(s)")
                 sys.exit(1)
 
-            self.download_binary(self.day.input_url(), input_path)
+        else:
+            # single file expected
+            input_path = self.day.input_path()
 
-        return input_path.open(mode="r")
+            if not input_path.exists():
+                self.download_binary(self.day.input_url(), input_path)
+
+            if not input_path.exists():
+                prompt.missing(case, f"input file(s)")
+                sys.exit(1)
+
+            paths = [input_path]
+
+        # we repeat path for as many wanted
+        return [path.open(mode="r") for path in itertools.islice(itertools.cycle(paths), count)]
 
     def load_results(self, case: Case) -> tp.List[tp.Dict[str, tp.Any]]:
         """Load result if it exists."""
-        result_path = self.day.result_path(use_example=case.example_data)
+        result_path = self.day.result_path(example_index=[-1, 0][case.example_data])
 
         if not result_path.exists():
             return []
