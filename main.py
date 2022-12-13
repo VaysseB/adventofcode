@@ -53,9 +53,9 @@ class Day:
 
     def _path_of(self, name: str, example_index: int) -> str:
         # rule for suffix
-        # x < 0  -> ''
-        # x == 0 -> '_ex'
-        # x == 1 -> '_ex2'
+        # index < 0  -> ''
+        # index == 0 -> '_ex'
+        # index == 1 -> '_ex2'
         suffix = '_ex' * (example_index >= 0) + str(example_index + 1) * (example_index > 0)
         return self.path / f"{name}{suffix}.txt"
 
@@ -184,31 +184,31 @@ class Executor:
 
         create_solver = self.day.solve_func(golf=day_case.golf_answer)
 
+        # error, we should have a solver function
+        # but we simply ignore it
         if create_solver is None:
             for answer_num, _ in enumerate(expected):
                 prompt.not_implemented(day_case.about(answer_num))
             return
 
         with contextlib.ExitStack() as estack:
-            # close all files when done automatically
+
             ifiles = self.validate_inputs(day_case)
 
+            # close all files when done automatically
             for ifile in ifiles:
                 estack.enter_context(ifile)
 
-            # create solver based on its signature
-            hints = tp.get_type_hints(create_solver)
+            # create solver
             solver = create_solver(ifiles)
 
             for answer_num, (raw, expect) in enumerate(
                 itertools.zip_longest(solver, expected)
             ):
+                # create case to give to prompt
                 case = day_case.about(answer_num)
 
-                if case.anwser_num > 0 and len(ifiles) == 1:
-                    # reset single file cursor in case of multiple run
-                    ifiles[0].seek(0)
-
+                # ignore day if not implemented
                 if raw is None:
                     prompt.not_implemented(case)
                     continue
