@@ -99,35 +99,40 @@ class FileSystem:
             nodes.extendleft(current.children())
 
 
-def solve(input: io.TextIOBase):
-    fs = FileSystem()
+def solve(inputs: tp.List[io.TextIOBase]):
+    answers = []
 
-    for line in input.readlines():
-        line = line.rstrip("\n")
+    for input in inputs:
+        fs = FileSystem()
 
-        starter = line[0:1]
-        if starter == "$":
-            cmd, _, tail = line[1:].lstrip(" ").partition(" ")
-            if cmd == "cd":
-                path = tail
-                fs.move(path)
-            elif cmd == "ls":
-                pass
+        for line in input.readlines():
+            line = line.rstrip("\n")
+
+            starter = line[0:1]
+            if starter == "$":
+                cmd, _, tail = line[1:].lstrip(" ").partition(" ")
+                if cmd == "cd":
+                    path = tail
+                    fs.move(path)
+                elif cmd == "ls":
+                    pass
+                else:
+                    raise RuntimeError("unexpected command")
+            elif starter == "d":
+                _, _, name = line.partition(" ")
+                fs.current.new_folder(name)
             else:
-                raise RuntimeError("unexpected command")
-        elif starter == "d":
-            _, _, name = line.partition(" ")
-            fs.current.new_folder(name)
-        else:
-            assert starter.isdigit(), "expected file size"
-            size, _, name = line.partition(" ")
-            fs.current.new_file(name, int(size))
+                assert starter.isdigit(), "expected file size"
+                size, _, name = line.partition(" ")
+                fs.current.new_file(name, int(size))
+            
+        answers.append(fs)
 
     # Part One
     limit_size = 100000
     folders_under_limit = [
         node
-        for node in fs.move("/").iterdir()
+        for node in answers[0].move("/").iterdir()
         if node.is_dir() and node.total_size() < limit_size
     ]
     sum_under_limit = sum(node.total_size() for node in folders_under_limit)
@@ -136,18 +141,18 @@ def solve(input: io.TextIOBase):
     # Part Two
     disk_size = 70000000
     update_size = 30000000
-    unused_size = disk_size - fs.root.total_size()
+    unused_size = disk_size - answers[1].root.total_size()
     to_free_size = update_size - unused_size
     assert to_free_size > 0, "nothing to delete needed"
     candidates = (
         node
-        for node in fs.move("/").iterdir()
+        for node in answers[1].move("/").iterdir()
         if node.is_dir() and node.total_size() >= to_free_size
     )
     candidates = sorted(candidates, key=FileSystem.Node.total_size)
     yield next(iter(candidates)).total_size(), [(c.path(), c.total_size()) for c in candidates]
 
 
-def solve_golf(input: io.TextIOBase):
+def solve_golf(inputs: tp.List[io.TextIOBase]):
     if False:
         yield

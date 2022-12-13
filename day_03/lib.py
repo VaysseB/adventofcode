@@ -47,29 +47,32 @@ def priority_of(item):
     return items.index(item) + 1
 
 
-def solve(input: io.TextIOBase):
-    elves = collections.deque()
+def solve(inputs: tp.List[io.TextIOBase]):
+    answers = []
 
-    for line in input.readlines():
-        line = line.rstrip("\n")
-        if not line:
-            continue
+    for input in inputs:
+        elves = collections.deque()
 
-        rucksacks = ElveRuckSacks.from_line(line)
-        elves.append(rucksacks)
+        for line in input.readlines():
+            line = line.rstrip("\n")
+            if not line:
+                continue
 
-    total_prio = 0
-    for elve in elves:
-        total_prio += priority_of(ElveRuckSacks.duplicate(elve))
+            rucksacks = ElveRuckSacks.from_line(line)
+            elves.append(rucksacks)
 
-    total_badges = 0
-    for i, group in enumerate(utils.group_slice(elves, 3)):
-        total_badges += priority_of(ElveRuckSacks.badge(group))
+        answers.append(elves)
 
+    total_prio = sum(priority_of(ElveRuckSacks.duplicate(elve)) for elve in answers[0])
     yield total_prio, None
+
+    total_badges = sum(
+        priority_of(ElveRuckSacks.badge(group))
+        for i, group in enumerate(utils.group_slice(answers[1], 3))
+    )
     yield total_badges, None
 
 
-def solve_golf(input: io.TextIOBase):
+def solve_golf(inputs: tp.List[io.TextIOBase]):
     if False:
         yield

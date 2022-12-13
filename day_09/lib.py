@@ -170,6 +170,6 @@ def solve(inputs: tp.List[io.TextIOBase]):
         yield len(rope.visited), None
 
 
-def solve_golf(input: io.TextIOBase):
+def solve_golf(inputs: tp.List[io.TextIOBase]):
     if False:
         yield

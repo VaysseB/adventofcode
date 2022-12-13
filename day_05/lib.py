@@ -66,45 +66,48 @@ class Instruction:
         )
 
 
-def solve(input: io.TextIOBase):
+def solve(inputs: tp.List[io.TextIOBase]):
+    docks = []
 
-    re_ruler = re.compile("^[0-9 ]*$")
+    for input, multiple in zip(inputs, [False, True]):
 
-    lines = (
-        line.rstrip("\n") for line in input.readlines() if not line.isspace()
-    )
-    dock: Dock = None
+        re_ruler = re.compile("^[0-9 ]*$")
 
-    # fetch dock status
-    rows = collections.deque()
-    for line in lines:
-        match_ruler = re_ruler.match(line)
+        lines = (
+            line.rstrip("\n") for line in input.readlines() if not line.isspace()
+        )
+        dock: Dock = None
 
-        if match_ruler:
-            dock = Dock.from_lines(line, rows)
-            break
+        # fetch dock status
+        rows = collections.deque()
+        for line in lines:
+            match_ruler = re_ruler.match(line)
 
-        rows.append(line)
+            if match_ruler:
+                dock = Dock.from_lines(line, rows)
+                break
 
-    assert dock is not None, "no dock"
+            rows.append(line)
 
-    # fetch instructions
-    instructions = collections.deque()
-    for line in lines:
-        inst = Instruction.from_line(line)
-        instructions.append(inst)
+        assert dock is not None, "no dock"
 
-    dock_9000 = utils.copy(dock=dock)
-    dock_9001 = utils.copy(dock=dock)
+        # fetch instructions
+        instructions = collections.deque()
+        for line in lines:
+            inst = Instruction.from_line(line)
+            instructions.append(inst)
 
-    for inst in instructions:
-        dock_9000.apply(inst, multiple=False)
-        dock_9001.apply(inst, multiple=True)
+        dock = utils.copy(dock=dock)
 
-    yield "".join(dock_9000.top_crates()), None
-    yield "".join(dock_9001.top_crates()), None
+        for inst in instructions:
+            dock.apply(inst, multiple=multiple)
+        
+        docks.append(dock)
+
+    yield "".join(docks[0].top_crates()), None
+    yield "".join(docks[1].top_crates()), None
 
 
-def solve_golf(input: io.TextIOBase):
+def solve_golf(inputs: tp.List[io.TextIOBase]):
     if False:
         yield

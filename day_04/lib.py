@@ -32,27 +32,34 @@ class Range:
         ]
 
 
-def solve(input: io.TextIOBase):
-    overlaps = {Overlap.COMPLETE: [], Overlap.PARTIAL: []}
+def solve(inputs: tp.List[io.TextIOBase]):
+    answers = []
 
-    for line in input.readlines():
-        line = line.rstrip("\n")
-        if not line:
-            continue
+    for input in inputs:
+        overlaps = {Overlap.COMPLETE: [], Overlap.PARTIAL: []}
 
-        r1, r2 = line.split(",")
-        first = Range(*map(int, r1.split("-")))
-        second = Range(*map(int, r2.split("-")))
+        for line in input.readlines():
+            line = line.rstrip("\n")
+            if not line:
+                continue
 
-        code = first.overlap_between(second)
-        if code:
-            overlaps[code].append((first, second))
+            r1, r2 = line.split(",")
+            first = Range(*map(int, r1.split("-")))
+            second = Range(*map(int, r2.split("-")))
 
-    yield len(overlaps[Overlap.COMPLETE]), None
-    yield len(overlaps[Overlap.PARTIAL]) + len(overlaps[Overlap.COMPLETE]), None
+            code = first.overlap_between(second)
+            if code:
+                overlaps[code].append((first, second))
+
+        answers.append(overlaps)
+
+    yield len(answers[0][Overlap.COMPLETE]), None
+    yield len(answers[1][Overlap.PARTIAL]) + len(answers[1][Overlap.COMPLETE]), None
 
 
-def solve_golf(input: io.TextIOBase):
+def solve_golf(inputs: tp.List[io.TextIOBase]):
+    input = inputs[0]
+
     res = list(
         [
             (line.rstrip("\n"), (start_f <= start_l and end_f >= end_l))
@@ -67,4 +74,4 @@ def solve_golf(input: io.TextIOBase):
         ]
     )
 
-    yield sum(dict(res).values()), res
+    yield sum(dict(res).values()), None  # res

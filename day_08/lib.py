@@ -103,22 +103,24 @@ class Forest:
         )
 
 
-def solve(input: io.TextIOBase):
+def solve(inputs: tp.List[io.TextIOBase]):
+    forests = []
 
-    raw = []
-    for line in input.readlines():
-        line = line.rstrip("\n")
-        if not line:
-            break
+    for input in inputs:
+        raw = []
+        for line in input.readlines():
+            line = line.rstrip("\n")
+            if not line:
+                break
 
-        raw.append([int(x) for x in line])
+            raw.append([int(x) for x in line])
 
-    forest = Forest.from_raw(raw)
+        forests.append(Forest.from_raw(raw))
 
-    yield len(forest.all_visible()), None
-    yield forest.best_scenic().score(), None
+    yield len(forests[0].all_visible()), None
+    yield forests[1].best_scenic().score(), None
 
 
-def solve_golf(input: io.TextIOBase):
+def solve_golf(inputs: tp.List[io.TextIOBase]):
     if False:
         yield

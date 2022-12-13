@@ -19,23 +19,26 @@ class DataStream:
             assert False, f"not found within {raw!r}"
 
 
-def solve(input: io.TextIOBase):
-    start_of_packet = collections.deque()
-    start_of_message = collections.deque()
+def solve(inputs: tp.List[io.TextIOBase]):
+    answers = []
 
-    for line in input.readlines():
-        line = line.rstrip("\n")
-        if not line:
-            break
+    for input, length in zip(inputs, [4, 14]):
+        starts = collections.deque()
 
-        ds = DataStream(line)
-        start_of_packet.append(ds.start_of(4))
-        start_of_message.append(ds.start_of(14))
+        for line in input.readlines():
+            line = line.rstrip("\n")
+            if not line:
+                break
 
-    yield ",".join(map(str, start_of_packet)), None
-    yield ",".join(map(str, start_of_message)), None
+            ds = DataStream(line)
+            starts.append(ds.start_of(length))
+        
+        answers.append(starts)
+
+    yield ",".join(map(str, answers[0])), None
+    yield ",".join(map(str, answers[1])), None
 
 
-def solve_golf(input: io.TextIOBase):
+def solve_golf(inputs: tp.List[io.TextIOBase]):
     if False:
         yield

@@ -1,7 +1,7 @@
 import io
 
 
-def solve(input: io.TextIOBase):
+def solve(inputs: tp.List[io.TextIOBase]):
     for line in input.readlines():
         line = line.rstrip("\n")
         if not line:
@@ -11,6 +11,6 @@ def solve(input: io.TextIOBase):
         yield
 
 
-def solve_golf(input: io.TextIOBase):
+def solve_golf(inputs: tp.List[io.TextIOBase]):
     if False:
         yield

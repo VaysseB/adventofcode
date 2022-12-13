@@ -3,6 +3,8 @@ import enum
 import itertools
 import dataclasses
 
+import typing as tp
+
 
 class Outcomes:  # (enum.Enum):
     @dataclasses.dataclass
@@ -99,45 +101,52 @@ class Choices:  # (enum.Enum):
         return iter([cls.ROCK, cls.PAPER, cls.SCISSORS])
 
 
-def solve(input: io.TextIOBase):
-    our_score = 0
-    secret_score = 0
+def solve(inputs: tp.List[io.TextIOBase]):
+    answers = []
 
-    line = input.readline()
-    while line:
-        elve_letter, our_letter = line.rstrip("\n").partition(" ")[::2]
-        elve_choice = next(
-            choice
-            for choice in Choices.__iter__()
-            if choice.elve == elve_letter
-        )
+    for input in inputs:
+        our_score = 0
+        secret_score = 0
 
-        #
-        our_choice = next(
-            choice for choice in Choices.__iter__() if choice.our == our_letter
-        )
-        outcome = our_choice.against(elve_choice)
-        play_score = outcome.score + our_choice.score
-        our_score += play_score
-
-        #
-        outcome = next(
-            outcome
-            for outcome in Outcomes.__iter__()
-            if outcome.symbol == our_letter
-        )
-        our_choice = elve_choice.fulfill(outcome)
-        play_score = outcome.score + our_choice.score
-        secret_score += play_score
-
-        #
         line = input.readline()
+        while line:
+            elve_letter, our_letter = line.rstrip("\n").partition(" ")[::2]
+            elve_choice = next(
+                choice
+                for choice in Choices.__iter__()
+                if choice.elve == elve_letter
+            )
 
-    yield our_score, None
-    yield secret_score, None
+            #
+            our_choice = next(
+                choice for choice in Choices.__iter__() if choice.our == our_letter
+            )
+            outcome = our_choice.against(elve_choice)
+            play_score = outcome.score + our_choice.score
+            our_score += play_score
+
+            #
+            outcome = next(
+                outcome
+                for outcome in Outcomes.__iter__()
+                if outcome.symbol == our_letter
+            )
+            our_choice = elve_choice.fulfill(outcome)
+            play_score = outcome.score + our_choice.score
+            secret_score += play_score
+
+            #
+            line = input.readline()
+
+        answers.append((our_score, secret_score))
+
+    yield answers[0][0], None
+    yield answers[1][1], None
 
 
-def solve_golf(input: io.TextIOBase):
+def solve_golf(inputs: tp.List[io.TextIOBase]):
+    input = inputs[0]
+
     play_score, outcome_score = [1, 2, 3], [0, 3, 6]
     elves, ours, outcomes = list("ABC"), list("XYZ"), list("XYZ")
 
