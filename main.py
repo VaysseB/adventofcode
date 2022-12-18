@@ -4,8 +4,8 @@ import dataclasses
 import pathlib
 import itertools
 import functools
+import collections
 import contextlib
-import inspect
 import pprint
 import typing as tp
 
@@ -27,6 +27,7 @@ class Day:
 
     @classmethod
     def list_from(cls, root: pathlib.Path) -> tp.Iterable["Day"]:
+        days = collections.deque()
         for path in root.iterdir():
             if path.name.startswith("day_") and path.is_dir():
                 try:
@@ -34,7 +35,9 @@ class Day:
                 except ValueError:
                     pass
                 else:
-                    yield cls(num, path)
+                    days.append(cls(num, path))
+
+        yield from sorted(days, key=lambda day: day.number)
 
     @classmethod
     def from_number(cls, num: int, root: pathlib.Path) -> "Day":
@@ -56,7 +59,9 @@ class Day:
         # index < 0  -> ''
         # index == 0 -> '_ex'
         # index == 1 -> '_ex2'
-        suffix = '_ex' * (example_index >= 0) + str(example_index + 1) * (example_index > 0)
+        suffix = "_ex" * (example_index >= 0) + str(example_index + 1) * (
+            example_index > 0
+        )
         return self.path / f"{name}{suffix}.txt"
 
     def input_path(self, *, example_index=-1) -> pathlib.Path:
@@ -272,11 +277,16 @@ class Executor:
             paths = [input_path]
 
         # we repeat path for as many wanted
-        return [path.open(mode="r") for path in itertools.islice(itertools.cycle(paths), count)]
+        return [
+            path.open(mode="r")
+            for path in itertools.islice(itertools.cycle(paths), count)
+        ]
 
     def load_results(self, case: Case) -> tp.List[tp.Dict[str, tp.Any]]:
         """Load result if it exists."""
-        result_path = self.day.result_path(example_index=[-1, 0][case.example_data])
+        result_path = self.day.result_path(
+            example_index=[-1, 0][case.example_data]
+        )
 
         if not result_path.exists():
             return []
@@ -313,19 +323,20 @@ def cli(day: tp.List[int], example: bool, real: bool, golf: bool):
     def get_session_cookie() -> str:
         return (root / "session_cookie.txt").read_text().rstrip()
 
-    days: tp.Iterable[Day] = (
-        [Day.from_number(number, root) for number in day] 
-        or Day.list_from(root)
-    )
+    days: tp.Iterable[Day] = [
+        Day.from_number(number, root) for number in day
+    ] or Day.list_from(root)
 
-    situations = list(itertools.compress(
-        *zip(
-            ({"example_run": True, "golf_mode": False}, example),
-            ({"example_run": False, "golf_mode": False}, real),
-            ({"example_run": True, "golf_mode": True}, example and golf),
-            ({"example_run": False, "golf_mode": True}, real and golf),
+    situations = list(
+        itertools.compress(
+            *zip(
+                ({"example_run": True, "golf_mode": False}, example),
+                ({"example_run": False, "golf_mode": False}, real),
+                ({"example_run": True, "golf_mode": True}, example and golf),
+                ({"example_run": False, "golf_mode": True}, real and golf),
+            )
         )
-    ))
+    )
 
     for day in days:
         executor = Executor(day, get_session_cookie)

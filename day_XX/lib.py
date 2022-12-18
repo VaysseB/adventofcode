@@ -1,5 +1,7 @@
 import io
 
+import typing as tp
+
 
 def solve(inputs: tp.List[io.TextIOBase]):
     answers = []
