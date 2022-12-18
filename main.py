@@ -178,6 +178,9 @@ class Executor:
         self.get_session_cookie = get_session_cookie
 
     def solve(self, example_run: bool, golf_mode: bool):
+        # insert day path to enable local import
+        sys.path.insert(0, str(self.day.path))
+
         day_case = Case(
             self.day.number,
             None,
@@ -194,6 +197,9 @@ class Executor:
         if create_solver is None:
             for answer_num, _ in enumerate(expected):
                 prompt.not_implemented(day_case.about(answer_num))
+
+            # clean
+            sys.path.remove(str(self.day.path))
             return
 
         with contextlib.ExitStack() as estack:
@@ -245,6 +251,9 @@ class Executor:
 
                     if infos is not None:
                         prompt.infos(case, infos)
+
+        # clean
+        sys.path.remove(str(self.day.path))
 
     def validate_inputs(self, case: Case, count=2) -> tp.List[io.TextIOBase]:
         """Check input validity and return read-only file(s) descriptor."""

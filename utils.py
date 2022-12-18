@@ -3,7 +3,49 @@ import itertools
 import dataclasses
 import collections
 import string
+import operator
 import typing as tp
+
+
+@dataclasses.dataclass
+class Counter:
+    _x: int = 0
+
+    @property
+    def value(self) -> int:
+        return self._x
+
+    @value.setter
+    def value(self, x):
+        self._x = x
+
+    def _op(self, op, other: "Counter") -> "Counter":
+        if isinstance(other, Counter):
+            return type(self)(op(self._x, other._x))
+        elif isinstance(other, int):
+            return type(self)(op(self._x, other))
+        raise NotImplementedError(f"not a {Counter!r} instance of {other!r}")
+
+    def __neg__(self) -> "Counter":
+        return type(self)(-self._x)
+
+    def __add__(self, other: "Counter") -> "Counter":
+        return self._op(operator.add, other)
+
+    def __radd__(self, other: "Counter") -> "Counter":
+        return self._op(operator.add, other)
+
+    def __sub__(self, other: "Counter") -> "Counter":
+        return self._op(operator.sub, other)
+
+    def __rsub__(self, other: "Counter") -> "Counter":
+        return self._op(operator.sub, -other)
+
+    def __mul__(self, other: "Counter") -> "Counter":
+        return self._op(operator.mul, other)
+
+    def __rmul__(self, other: "Counter") -> "Counter":
+        return self._op(operator.mul, other)
 
 
 class classproperty(property):
@@ -61,14 +103,22 @@ def sliding_window(
         yield tuple(window)
 
 
-def gen_names(corpus: tp.List[str]=string.ascii_lowercase, min_length: int=1) -> tp.Iterable[str]:
+def gen_names(
+    corpus: tp.List[str] = string.ascii_lowercase, min_length: int = 1
+) -> tp.Iterable[str]:
     corpus = list(corpus)
     yield from iter(
-        "".join(next(itertools.islice(
-            itertools.product(corpus, repeat=min_length + (x // len(corpus))),
-            x % len(corpus),
-            x % len(corpus) + 1
-        )))
+        "".join(
+            next(
+                itertools.islice(
+                    itertools.product(
+                        corpus, repeat=min_length + (x // len(corpus))
+                    ),
+                    x % len(corpus),
+                    x % len(corpus) + 1,
+                )
+            )
+        )
         for x in itertools.count(0)
     )
 
